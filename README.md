@@ -42,9 +42,3 @@ Buka http://localhost:5173
 | Random Forest | 80,63% | 61,27% | 81,61% | 70,00% |
 | **XGBoost** | **82,10%** | **64,12%** | **80,21%** | **71,27%** |
 
-## Tim
-
-| Nama | Bagian |
-|---|---|
-| Riyani Astarani | Backend, algoritma, notebook modeling |
-| Riyana | Frontend, EDA, deploy |
