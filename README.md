@@ -30,7 +30,6 @@ FinalProjectPerdaganganElektronik/
 │   ├── api/index.py             # titik masuk Vercel
 │   ├── requirements.txt
 │   ├── schema.sql               # tabel dan bucket Supabase
-│   ├── Procfile                 # perintah start untuk Railway
 │   ├── vercel.json
 │   └── .env.example
 ├── frontend/                    # Vue 3 + Tailwind (Riyana)
@@ -75,24 +74,23 @@ Tanpa variabel Supabase, backend otomatis memakai SQLite (`backend/instance/hote
    - kunci `service_role` ke `SUPABASE_SERVICE_KEY` (hanya untuk backend, jangan dimasukkan ke frontend)
 4. Untuk mencoba di laptop dengan Supabase: buat file `backend/.env` dari `.env.example`, lalu jalankan backend dengan variabel tersebut (misalnya `export $(cat .env | xargs) && python app.py`).
 
-## Deploy
+## Deploy ke Vercel (backend dan frontend, 2 project dari repo yang sama)
 
-### Backend ke Railway
-1. Di railway.com: **New Project > Deploy from GitHub repo**, pilih repo ini.
-2. Di pengaturan service: **Root Directory** = `backend`. Railway otomatis memakai `Procfile` (gunicorn).
-3. Tab **Variables**: isi `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_BUCKET=datasets`.
-4. Tab **Settings > Networking > Generate Domain**, lalu cek `https://<domain>/api/status` (harus `"mode": "supabase"`).
+### Project 1: backend
+1. Di vercel.com: **Add New > Project**, pilih repo ini.
+2. **Framework Preset** = Other, **Root Directory** = `backend`.
+3. **Environment Variables**: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_BUCKET=datasets`.
+4. Deploy, lalu cek `https://<nama-backend>.vercel.app/api/status` (harus `"mode": "supabase"`).
 
-Catatan: Railway tidak gratis selamanya. Trial berupa kredit $5 selama 30 hari; paket Free memberi kredit $1 per bulan dan aplikasi tidur saat tidak dipakai.
-
-Alternatif gratis: backend juga bisa di-deploy ke Vercel (Root Directory = `backend`, isi variabel yang sama), karena aplikasi hanya memuat model `.pkl` tanpa training.
-
-### Frontend ke Vercel
-1. Di vercel.com: **Add New > Project**, pilih repo ini, **Root Directory** = `frontend`, framework **Vite**.
-2. Environment Variable `VITE_API_URL` = alamat backend (domain Railway atau Vercel backend).
+### Project 2: frontend
+1. **Add New > Project** lagi dari repo yang sama, **Root Directory** = `frontend`, framework **Vite**.
+2. Environment Variable `VITE_API_URL` = alamat backend, misalnya `https://<nama-backend>.vercel.app`.
 3. Deploy, lalu buka alamat frontend.
 
-Penyimpanan online memakai Supabase (`backend/schema.sql`). Kunci `service_role` hanya diisi di backend.
+Catatan:
+- Di Vercel, Supabase wajib diisi karena penyimpanan file di server Vercel bersifat sementara.
+- Kunci `service_role` hanya diisi di backend, jangan di frontend atau GitHub.
+- Backend hanya memuat model `.pkl` tanpa training, sehingga cukup ringan untuk Vercel.
 
 ## Catatan Mac
 Jika muncul `Port 5000 is in use`, matikan **System Settings > General > AirDrop & Continuity > AirPlay Receiver**, atau jalankan backend dengan `PORT=5001 python app.py` dan isi `frontend/.env` dengan `VITE_API_URL=http://localhost:5001`.
