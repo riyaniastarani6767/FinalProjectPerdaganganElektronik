@@ -1,0 +1,190 @@
+{
+  "param_rf": {
+    "n_estimators": 50,
+    "max_depth": 25,
+    "min_samples_split": 5,
+    "min_samples_leaf": 1,
+    "max_samples": 0.6,
+    "class_weight": "balanced"
+  },
+  "param_xgb": {
+    "n_estimators": 200,
+    "max_depth": 8,
+    "learning_rate": 0.1,
+    "min_child_weight": 3,
+    "scale_pos_weight": 2.0
+  },
+  "metrik_uji": {
+    "xgboost": {
+      "accuracy": 82.09840300610615,
+      "precision": 64.12343167175314,
+      "recall": 80.21208907741251,
+      "f1": 71.27108263450485,
+      "tn": 10201,
+      "fp": 2116,
+      "fn": 933,
+      "tp": 3782
+    },
+    "random_forest": {
+      "accuracy": 80.6305777360263,
+      "precision": 61.273885350318466,
+      "recall": 81.6118769883351,
+      "f1": 69.99545247839927,
+      "tn": 9885,
+      "fp": 2432,
+      "fn": 867,
+      "tp": 3848
+    }
+  },
+  "baseline": [
+    {
+      "Model": "Selalu menebak tidak batal",
+      "Accuracy": 72.31681540629403,
+      "Precision": 0.0,
+      "Recall": 0.0,
+      "F1": 0.0
+    },
+    {
+      "Model": "Aturan: deposit Non Refund berarti batal",
+      "Accuracy": 73.52630342883984,
+      "Precision": 94.01709401709401,
+      "Recall": 4.665959703075292,
+      "F1": 8.890684986866033
+    },
+    {
+      "Model": "Pohon keputusan kedalaman 3",
+      "Accuracy": 74.55965241897604,
+      "Precision": 56.83118741058655,
+      "Recall": 33.70095440084835,
+      "F1": 42.311276794035415
+    }
+  ],
+  "split": [
+    {
+      "Split": "90:10",
+      "Model": "XGBoost",
+      "Data_uji": 8517,
+      "Accuracy": 82.07115181401902,
+      "Precision": 64.06091370558376,
+      "Recall": 80.27989821882952,
+      "F1": 71.2591756070017,
+      "Detik": 13.429210662841797
+    },
+    {
+      "Split": "90:10",
+      "Model": "Random Forest",
+      "Data_uji": 8517,
+      "Accuracy": 79.59375366913233,
+      "Precision": 59.31490384615385,
+      "Recall": 83.7150127226463,
+      "F1": 69.43369679915583,
+      "Detik": 17.69879722595215
+    },
+    {
+      "Split": "80:20",
+      "Model": "XGBoost",
+      "Data_uji": 17032,
+      "Accuracy": 82.09840300610615,
+      "Precision": 64.12343167175314,
+      "Recall": 80.21208907741251,
+      "F1": 71.27108263450485,
+      "Detik": 11.984586477279663
+    },
+    {
+      "Split": "80:20",
+      "Model": "Random Forest",
+      "Data_uji": 17032,
+      "Accuracy": 80.6305777360263,
+      "Precision": 61.273885350318466,
+      "Recall": 81.6118769883351,
+      "F1": 69.99545247839927,
+      "Detik": 16.717263221740723
+    },
+    {
+      "Split": "70:30",
+      "Model": "XGBoost",
+      "Data_uji": 25548,
+      "Accuracy": 82.02990449350243,
+      "Precision": 64.05984359061544,
+      "Recall": 79.92081447963801,
+      "F1": 71.11670336583833,
+      "Detik": 11.047137975692749
+    },
+    {
+      "Split": "70:30",
+      "Model": "Random Forest",
+      "Data_uji": 25548,
+      "Accuracy": 79.89275090026617,
+      "Precision": 59.80739989863153,
+      "Recall": 83.42760180995475,
+      "F1": 69.66995335655665,
+      "Detik": 14.73309326171875
+    },
+    {
+      "Split": "60:40",
+      "Model": "XGBoost",
+      "Data_uji": 34065,
+      "Accuracy": 82.15470424189051,
+      "Precision": 64.2875415707342,
+      "Recall": 79.94697773064688,
+      "F1": 71.26719289124168,
+      "Detik": 8.773233413696289
+    },
+    {
+      "Split": "60:40",
+      "Model": "Random Forest",
+      "Data_uji": 34065,
+      "Accuracy": 80.2348451489799,
+      "Precision": 60.534333255214435,
+      "Recall": 82.17391304347827,
+      "F1": 69.71346318204309,
+      "Detik": 12.891721725463867
+    }
+  ],
+  "shap_xgboost": {
+    "country": 15.83,
+    "required_car_parking_spaces": 15.81,
+    "agent": 12.95,
+    "lead_time": 10.63,
+    "market_segment": 9.16,
+    "total_of_special_requests": 8.14,
+    "customer_type": 5.13,
+    "adr": 4.06,
+    "previous_bookings_not_canceled": 3.1,
+    "arrival_date_month": 2.95,
+    "total_malam": 2.04,
+    "distribution_channel": 1.68,
+    "deposit_type": 1.65,
+    "previous_cancellations": 1.57,
+    "total_tamu": 1.12,
+    "hotel": 1.11,
+    "meal": 1.06,
+    "reserved_room_type": 0.93,
+    "is_repeated_guest": 0.58,
+    "punya_company": 0.51,
+    "days_in_waiting_list": 0.0
+  },
+  "shap_random_forest": {
+    "agent": 18.24,
+    "country": 17.21,
+    "lead_time": 13.67,
+    "total_of_special_requests": 10.09,
+    "market_segment": 8.38,
+    "required_car_parking_spaces": 6.67,
+    "customer_type": 5.99,
+    "adr": 2.96,
+    "distribution_channel": 2.79,
+    "total_malam": 2.18,
+    "previous_bookings_not_canceled": 2.08,
+    "hotel": 2.04,
+    "arrival_date_month": 1.47,
+    "total_tamu": 1.17,
+    "reserved_room_type": 1.09,
+    "deposit_type": 1.04,
+    "previous_cancellations": 0.99,
+    "meal": 0.97,
+    "is_repeated_guest": 0.55,
+    "punya_company": 0.41,
+    "days_in_waiting_list": 0.0
+  }
+}

@@ -1,0 +1,146 @@
+{
+  "data": {
+    "nama": "Hotel Booking Demand",
+    "jumlah": 85162,
+    "latih": 68130,
+    "uji": 17032,
+    "persen_batal": 27.68
+  },
+  "model": {
+    "xgboost": {
+      "nama": "XGBoost",
+      "accuracy": 82.1,
+      "precision": 64.12,
+      "recall": 80.21,
+      "f1": 71.27,
+      "tn": 10201,
+      "fp": 2116,
+      "fn": 933,
+      "tp": 3782,
+      "shap": [
+        {
+          "fitur": "required_car_parking_spaces",
+          "persen": 17.09
+        },
+        {
+          "fitur": "country",
+          "persen": 15.93
+        },
+        {
+          "fitur": "agent",
+          "persen": 11.09
+        },
+        {
+          "fitur": "lead_time",
+          "persen": 10.19
+        },
+        {
+          "fitur": "market_segment",
+          "persen": 9.3
+        },
+        {
+          "fitur": "total_of_special_requests",
+          "persen": 8.96
+        },
+        {
+          "fitur": "customer_type",
+          "persen": 5.14
+        },
+        {
+          "fitur": "adr",
+          "persen": 3.78
+        },
+        {
+          "fitur": "previous_bookings_not_canceled",
+          "persen": 2.8
+        },
+        {
+          "fitur": "arrival_date_month",
+          "persen": 2.73
+        }
+      ],
+      "parameter": {
+        "n_estimators": 200,
+        "learning_rate": 0.1,
+        "max_depth": 8,
+        "min_child_weight": 3,
+        "reg_lambda": 1.0,
+        "gamma": 0.0,
+        "subsample": 0.8,
+        "colsample_bytree": 0.6,
+        "scale_pos_weight": 2.0
+      },
+      "durasi_latih": 11.9
+    },
+    "random_forest": {
+      "nama": "Random Forest",
+      "accuracy": 80.63,
+      "precision": 61.27,
+      "recall": 81.61,
+      "f1": 70.0,
+      "tn": 9885,
+      "fp": 2432,
+      "fn": 867,
+      "tp": 3848,
+      "shap": [
+        {
+          "fitur": "country",
+          "persen": 18.37
+        },
+        {
+          "fitur": "agent",
+          "persen": 15.88
+        },
+        {
+          "fitur": "lead_time",
+          "persen": 13.13
+        },
+        {
+          "fitur": "total_of_special_requests",
+          "persen": 10.97
+        },
+        {
+          "fitur": "market_segment",
+          "persen": 8.07
+        },
+        {
+          "fitur": "required_car_parking_spaces",
+          "persen": 7.59
+        },
+        {
+          "fitur": "customer_type",
+          "persen": 6.0
+        },
+        {
+          "fitur": "adr",
+          "persen": 2.73
+        },
+        {
+          "fitur": "distribution_channel",
+          "persen": 2.59
+        },
+        {
+          "fitur": "total_malam",
+          "persen": 2.39
+        }
+      ],
+      "parameter": {
+        "n_estimators": 50,
+        "max_depth": 25,
+        "min_samples_split": 5,
+        "min_samples_leaf": 1,
+        "max_features": "sqrt",
+        "max_samples": 0.6,
+        "class_weight": "balanced",
+        "ccp_alpha": 0.0
+      },
+      "durasi_latih": 16.8
+    }
+  },
+  "baseline": {
+    "nama": "Pohon keputusan kedalaman 3",
+    "f1": 42.31,
+    "accuracy": 74.56
+  },
+  "terbaik": "xgboost"
+}
