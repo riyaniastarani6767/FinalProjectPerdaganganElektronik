@@ -6,3 +6,4 @@ backend/instance/
 .DS_Store
 venv/
 notebook/hasil/data_bersih.csv
+*.zip
