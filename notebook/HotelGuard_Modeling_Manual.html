@@ -10580,11 +10580,11 @@ Hasil ini ditampilkan di aplikasi pada menu <strong>Evaluasi</strong>, dan SHAP 
 <tbody>
 <tr>
 <td>1. Modularisasi</td>
-<td>Fungsi preprocessing dan algoritma dari notebook dipindah ke <code>backend/ml/preprocessing.py</code> dan <code>backend/ml/algoritma.py</code>; parameter terbaik ke <code>backend/ml/config.py</code></td>
+<td>Fungsi preprocessing dan algoritma dari notebook dipindah ke <code>backend/ml/preprocessing.py</code> dan <code>backend/ml/algoritma.py</code>; parameter terbaik ke <code>backend/ml/latih_model.py</code></td>
 </tr>
 <tr>
 <td>2. Model final</td>
-<td>Model terbaik dilatih ulang dan disimpan sebagai <code>backend/models/model_xgboost.pkl</code> dan <code>model_random_forest.pkl</code> (pickle) lewat <code>backend/latih_model.py</code></td>
+<td>Model terbaik dilatih ulang dan disimpan sebagai <code>backend/models/model_xgboost.pkl</code> dan <code>model_random_forest.pkl</code> (pickle) lewat <code>backend/ml/latih_model.py</code></td>
 </tr>
 <tr>
 <td>3. Backend API</td>
@@ -10600,7 +10600,7 @@ Hasil ini ditampilkan di aplikasi pada menu <strong>Evaluasi</strong>, dan SHAP 
 </tr>
 <tr>
 <td>6. Hosting</td>
-<td>Vercel (frontend dan fungsi Python Flask)</td>
+<td>Railway (backend Flask) dan Vercel (frontend)</td>
 </tr>
 </tbody>
 </table>

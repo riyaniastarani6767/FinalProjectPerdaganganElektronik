@@ -70,7 +70,7 @@
         "colsample_bytree": 0.6,
         "scale_pos_weight": 2.0
       },
-      "durasi_latih": 11.9
+      "durasi_latih": 11.6
     },
     "random_forest": {
       "nama": "Random Forest",
@@ -134,7 +134,7 @@
         "class_weight": "balanced",
         "ccp_alpha": 0.0
       },
-      "durasi_latih": 16.8
+      "durasi_latih": 13.2
     }
   },
   "baseline": {

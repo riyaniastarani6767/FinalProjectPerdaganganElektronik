@@ -3,3 +3,5 @@ dist/
 __pycache__/
 backend/instance/
 .env
+.DS_Store
+venv/

@@ -27,15 +27,15 @@ from flask import Flask, Response, jsonify, redirect, request
 
 sys.path.insert(0, str(Path(__file__).parent))
 from dashboard import hitung as hitung_dashboard          # noqa: E402
-from ml import config                                      # noqa: E402
 from ml.algoritma import shap_permutasi                     # noqa: E402
 from ml.preprocessing import (CLEAN_COLS, LABEL, RAW_REQUIRED,  # noqa: E402
                               clean_raw, is_clean, is_raw)
-from storage import buat_store, sekarang                   # noqa: E402
+from database import buat_store, sekarang                  # noqa: E402
 
 BASE = Path(__file__).parent
 DATA_BAWAAN = BASE / 'data' / 'hotel_bookings.csv'
 NAMA_BAWAAN = 'data_bawaan.csv'
+SEED = 42
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 60 * 1024 * 1024
@@ -323,7 +323,7 @@ def predict():
     lain = np.concatenate([g[1] for g in enc.groups if g[0] not in INPUT])
     latar = paket['latar'].copy()
     latar[:, lain] = X[0, lain]
-    phi = shap_permutasi(model.output, X, latar, grup, n_perm=30, seed=config.SEED)[0]
+    phi = shap_permutasi(model.output, X, latar, grup, n_perm=30, seed=SEED)[0]
     urut = np.argsort(-np.abs(phi))[:3]
     alasan = [dict(fitur=grup[i][0], teks=kalimat(grup[i][0], baris[grup[i][0]]),
                    arah='menaikkan risiko' if phi[i] > 0 else 'menurunkan risiko', nilai=round(float(phi[i]), 4))
@@ -339,4 +339,5 @@ def root():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    import os
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)), debug=True)

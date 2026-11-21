@@ -1,8 +1,8 @@
 """
 Melatih model final (XGBoost dan Random Forest manual) pada data bawaan, lalu menyimpannya ke folder models/.
 
-Jalankan sekali (atau dari notebook):
-    python latih_model.py
+Jalankan dari folder backend:
+    python ml/latih_model.py
 
 Hasil:
     models/model_xgboost.pkl         model XGBoost manual + encoder
@@ -18,21 +18,28 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-BASE = Path(__file__).resolve().parent
+BASE = Path(__file__).resolve().parent.parent          # folder backend
 sys.path.insert(0, str(BASE))
-from ml import config                                                     # noqa: E402
 from ml.algoritma import (Binner, DecisionTreeGini, RandomForestManual,    # noqa: E402
                           XGBoostManual, hitung_metrik, shap_permutasi, stratified_split)
 from ml.preprocessing import FITUR, LABEL, Encoder, clean_raw              # noqa: E402
 
 MODELS = BASE / 'models'
+SEED = 42
+
+# Parameter terbaik hasil tuning manual di notebook
+PARAM_XGB = dict(n_estimators=200, learning_rate=0.1, max_depth=8, min_child_weight=3,
+                 reg_lambda=1.0, gamma=0.0, subsample=0.8, colsample_bytree=0.6,
+                 scale_pos_weight=2.0)
+PARAM_RF = dict(n_estimators=50, max_depth=25, min_samples_split=5, min_samples_leaf=1,
+                max_features='sqrt', max_samples=0.6, class_weight='balanced', ccp_alpha=0.0)
 
 
 def main():
     MODELS.mkdir(exist_ok=True)
     data, _, info = clean_raw(pd.read_csv(BASE / 'data' / 'hotel_bookings.csv'))
     y = data[LABEL].to_numpy()
-    idx_latih, idx_uji = stratified_split(y, test_size=0.2, seed=config.SEED)
+    idx_latih, idx_uji = stratified_split(y, test_size=0.2, seed=SEED)
     latih = data.iloc[idx_latih]
     enc = Encoder().fit(latih)
     X_latih, X_uji = enc.transform(latih), enc.transform(data.iloc[idx_uji])
@@ -50,10 +57,10 @@ def main():
                            latih=int(len(idx_latih)), uji=int(len(idx_uji)), persen_batal=info['persen_batal']),
                  model={})
 
-    for kode, nama, kelas, param in [('xgboost', 'XGBoost', XGBoostManual, config.PARAM_XGB),
-                                     ('random_forest', 'Random Forest', RandomForestManual, config.PARAM_RF)]:
+    for kode, nama, kelas, param in [('xgboost', 'XGBoost', XGBoostManual, PARAM_XGB),
+                                     ('random_forest', 'Random Forest', RandomForestManual, PARAM_RF)]:
         t = time.time()
-        model = kelas(**param, seed=config.SEED).fit(X_latih, y_latih)
+        model = kelas(**param, seed=SEED).fit(X_latih, y_latih)
         durasi = time.time() - t
         m = hitung_metrik(y_uji, model.predict_proba(X_uji) >= 0.5)
         phi = shap_permutasi(model.output, X_uji[:200], latar, enc.groups, n_perm=10)
