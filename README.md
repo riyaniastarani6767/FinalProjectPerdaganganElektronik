@@ -19,7 +19,11 @@ FinalProjectPerdaganganElektronik/
 │   ├── dashboard.py             # hitung angka dan grafik Dashboard BI
 │   ├── ml/
 │   │   ├── preprocessing.py     # pembersihan data dan encoding manual
-│   │   ├── algoritma.py         # Random Forest, XGBoost, metrik, SHAP (manual, hanya numpy)
+│   │   ├── evaluasi.py          # pembagian data stratified + accuracy, precision, recall, F1, confusion matrix
+│   │   ├── pohon_keputusan.py   # Decision Tree Gini + pre/post pruning (dasar Random Forest)
+│   │   ├── random_forest.py     # Random Forest manual (bagging + voting)
+│   │   ├── xgboost_manual.py    # XGBoost manual (gradien/hessian + sigmoid)
+│   │   ├── shap_manual.py       # SHAP manual (permutasi Shapley)
 │   │   └── latih_model.py       # parameter terbaik + latih dan simpan model
 │   ├── models/                  # model_xgboost.pkl, model_random_forest.pkl, evaluasi.json
 │   ├── data/hotel_bookings.csv  # data bawaan
@@ -71,29 +75,24 @@ Tanpa variabel Supabase, backend otomatis memakai SQLite (`backend/instance/hote
    - kunci `service_role` ke `SUPABASE_SERVICE_KEY` (hanya untuk backend, jangan dimasukkan ke frontend)
 4. Untuk mencoba di laptop dengan Supabase: buat file `backend/.env` dari `.env.example`, lalu jalankan backend dengan variabel tersebut (misalnya `export $(cat .env | xargs) && python app.py`).
 
-## Deploy ke Vercel (backend dan frontend)
+## Deploy
 
-Buat **2 project Vercel** dari repo GitHub yang sama. Pastikan folder `backend` dan `frontend` sudah ter-push ke GitHub.
+### Backend ke Railway
+1. Di railway.com: **New Project > Deploy from GitHub repo**, pilih repo ini.
+2. Di pengaturan service: **Root Directory** = `backend`. Railway otomatis memakai `Procfile` (gunicorn).
+3. Tab **Variables**: isi `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `SUPABASE_BUCKET=datasets`.
+4. Tab **Settings > Networking > Generate Domain**, lalu cek `https://<domain>/api/status` (harus `"mode": "supabase"`).
 
-### 1. Backend
-1. vercel.com, **Add New > Project**, pilih repo ini, lalu **Import**.
-2. **Project Name**: misalnya `hotelguard-api`.
-3. **Framework Preset**: `Other`. **Root Directory**: klik Edit, pilih `backend`.
-4. **Environment Variables**: isi `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, dan `SUPABASE_BUCKET` = `datasets`.
-5. Klik **Deploy**. Setelah selesai, buka `https://hotelguard-api.vercel.app/api/status` dan pastikan muncul `"mode": "supabase"`.
+Catatan: Railway tidak gratis selamanya. Trial berupa kredit $5 selama 30 hari; paket Free memberi kredit $1 per bulan dan aplikasi tidur saat tidak dipakai.
 
-### 2. Frontend
-1. **Add New > Project** lagi, pilih repo yang sama.
-2. **Project Name**: misalnya `hotelguard`.
-3. **Framework Preset**: `Vite`. **Root Directory**: `frontend`.
-4. **Environment Variables**: `VITE_API_URL` = alamat backend, misalnya `https://hotelguard-api.vercel.app` (tanpa garis miring di akhir).
-5. Klik **Deploy**, lalu buka alamat frontend.
+Alternatif gratis: backend juga bisa di-deploy ke Vercel (Root Directory = `backend`, isi variabel yang sama), karena aplikasi hanya memuat model `.pkl` tanpa training.
 
-Catatan:
-- Di Vercel, Supabase **wajib** diisi karena penyimpanan file di server Vercel bersifat sementara.
-- File CSV diunggah langsung dari browser ke Supabase Storage, sehingga tidak terkena batas ukuran request Vercel.
-- Setiap `git push` ke GitHub otomatis membuat Vercel deploy ulang.
-- Alternatif backend: Railway (sudah ada `Procfile`), tetapi Railway tidak gratis selamanya.
+### Frontend ke Vercel
+1. Di vercel.com: **Add New > Project**, pilih repo ini, **Root Directory** = `frontend`, framework **Vite**.
+2. Environment Variable `VITE_API_URL` = alamat backend (domain Railway atau Vercel backend).
+3. Deploy, lalu buka alamat frontend.
+
+Penyimpanan online memakai Supabase (`backend/schema.sql`). Kunci `service_role` hanya diisi di backend.
 
 ## Catatan Mac
 Jika muncul `Port 5000 is in use`, matikan **System Settings > General > AirDrop & Continuity > AirPlay Receiver**, atau jalankan backend dengan `PORT=5001 python app.py` dan isi `frontend/.env` dengan `VITE_API_URL=http://localhost:5001`.
@@ -141,10 +140,11 @@ python ml/latih_model.py
 | Arahan dosen | Ada di |
 |---|---|
 | Dilihat dari karakteristik datanya | Notebook bagian 1 (tabel karakteristik data dan alasan memilih metode) |
-| Fungsi apa yang dipakai di awal dan di akhir | Notebook bagian 3 (Gini, gradien/hessian log-loss, voting, sigmoid); komentar di `ml/algoritma.py` |
+| Fungsi apa yang dipakai di awal dan di akhir | Notebook bagian 3 (Gini, gradien/hessian log-loss, voting, sigmoid); komentar di awal `ml/pohon_keputusan.py`, `ml/random_forest.py`, `ml/xgboost_manual.py` |
 | Mengubah data menjadi angka dengan cara apa | Notebook bagian 2 (One-Hot Encoding manual, ordinal, biner, 15 teratas + Lainnya) |
 | Pre-pruning dan post-pruning | Notebook bagian 3 dan 3.5 (max_depth, min_samples_leaf, min_child_weight; ccp_alpha, gamma) beserta percobaannya |
-| Model terbaik dibandingkan dari metode evaluasi | Notebook bagian 3.4, 3.6, 4; menu Evaluasi |
+| Model terbaik dibandingkan dari metode evaluasi (termasuk baseline) | Notebook bagian 3.2, 3.4, 3.6, 4; menu Evaluasi (tabel baseline + metrik) |
+| Kenapa memakai analisis ini, membandingkan beberapa model (RF vs XGBoost vs baseline) dan kesimpulannya | Notebook bagian 1, 3.2, 3.4, Kesimpulan; menu Evaluasi (kotak Kesimpulan) |
 | Hasil setiap model berapa | Tabel hasil notebook; menu Evaluasi dan Dashboard |
 | Kenapa memakai confusion matrix dan metrik lain | Notebook bagian 4 (tabel alasan tiap metode) |
 | Tahap-tahap deployment | Notebook bagian 6; README ini |

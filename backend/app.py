@@ -27,7 +27,7 @@ from flask import Flask, Response, jsonify, redirect, request
 
 sys.path.insert(0, str(Path(__file__).parent))
 from dashboard import hitung as hitung_dashboard          # noqa: E402
-from ml.algoritma import shap_permutasi                     # noqa: E402
+from ml.shap_manual import shap_permutasi                   # noqa: E402
 from ml.preprocessing import (CLEAN_COLS, LABEL, RAW_REQUIRED,  # noqa: E402
                               clean_raw, is_clean, is_raw)
 from database import buat_store, sekarang                  # noqa: E402

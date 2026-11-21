@@ -20,8 +20,11 @@ import pandas as pd
 
 BASE = Path(__file__).resolve().parent.parent          # folder backend
 sys.path.insert(0, str(BASE))
-from ml.algoritma import (Binner, DecisionTreeGini, RandomForestManual,    # noqa: E402
-                          XGBoostManual, hitung_metrik, shap_permutasi, stratified_split)
+from ml.evaluasi import hitung_metrik, stratified_split                   # noqa: E402
+from ml.pohon_keputusan import Binner, DecisionTreeGini                  # noqa: E402
+from ml.random_forest import RandomForestManual                          # noqa: E402
+from ml.shap_manual import shap_permutasi                                # noqa: E402
+from ml.xgboost_manual import XGBoostManual                              # noqa: E402
 from ml.preprocessing import FITUR, LABEL, Encoder, clean_raw              # noqa: E402
 
 MODELS = BASE / 'models'
@@ -73,12 +76,19 @@ def main():
             pickle.dump(dict(model=model, encoder=enc, latar=latar, bawaan=bawaan), f)
         print(f'{nama}: F1 {m["f1"]:.2f}%, disimpan ke models/model_{kode}.pkl ({durasi:.1f} detik)')
 
-    # baseline sederhana sebagai pembanding
+    # baseline sederhana sebagai pembanding (model yang baik harus mengalahkan ini)
+    def ringkas(nama, m):
+        return dict(nama=nama, **{k: round(m[k], 2) for k in ['accuracy', 'precision', 'recall', 'f1']})
+
     b = Binner().fit(X_latih)
     pohon = DecisionTreeGini(max_depth=3, min_samples_leaf=1).fit_binned(
         b.transform(X_latih), y_latih.astype(float), np.ones(len(y_latih)), np.arange(len(y_latih)))
-    mb = hitung_metrik(y_uji, pohon.predict_proba_binned(b.transform(X_uji)) >= 0.5)
-    hasil['baseline'] = dict(nama='Pohon keputusan kedalaman 3', f1=round(mb['f1'], 2), accuracy=round(mb['accuracy'], 2))
+    non_refund = X_uji[:, enc.columns.index('deposit_type_Non Refund')] == 1
+    hasil['baseline'] = [
+        ringkas('Selalu menebak tidak batal', hitung_metrik(y_uji, np.zeros_like(y_uji))),
+        ringkas('Aturan: deposit Non Refund berarti batal', hitung_metrik(y_uji, non_refund)),
+        ringkas('Pohon keputusan kedalaman 3', hitung_metrik(y_uji, pohon.predict_proba_binned(b.transform(X_uji)) >= 0.5)),
+    ]
     hasil['terbaik'] = max(hasil['model'], key=lambda k: hasil['model'][k]['f1'])
 
     (MODELS / 'evaluasi.json').write_text(json.dumps(hasil, indent=2, default=float))
