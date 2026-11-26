@@ -26,7 +26,7 @@ import pandas as pd
 from flask import Flask, Response, jsonify, redirect, request
 
 sys.path.insert(0, str(Path(__file__).parent))
-from dashboard import hitung as hitung_dashboard          # noqa: E402
+from dashboard import NEGARA, hitung as hitung_dashboard  # noqa: E402
 from ml.shap_manual import shap_permutasi                   # noqa: E402
 from ml.preprocessing import (CLEAN_COLS, LABEL, RAW_REQUIRED,  # noqa: E402
                               clean_raw, is_clean, is_raw)
@@ -134,10 +134,20 @@ def upload_start():
     return jsonify(path=path, target=store.upload_target(path))
 
 
+POLA_PATH = re.compile(r'^(raw|clean)/[A-Za-z0-9_.-]+$')
+
+
+def path_aman(path):
+    """Path file hanya boleh di folder raw/ atau clean/ dan tidak boleh berisi '..'."""
+    return isinstance(path, str) and bool(POLA_PATH.match(path)) and '..' not in path
+
+
 @app.put('/api/upload/local/<path:path>')
 def upload_local(path):
     if store.mode != 'lokal':
         return gagal('Hanya untuk mode lokal.', 404)
+    if not path_aman(path):
+        return gagal('Path file tidak valid.')
     isi = next(iter(request.files.values())).read() if request.files else request.get_data()
     store.save_file(path, isi)
     return jsonify(ok=True)
@@ -146,7 +156,9 @@ def upload_local(path):
 @app.post('/api/upload/inspect')
 def upload_inspect():
     body = request.get_json(force=True)
-    path, nama = body['path'], body.get('nama_file', 'data.csv')
+    path, nama = body.get('path'), body.get('nama_file', 'data.csv')
+    if not path_aman(path):
+        return gagal('Path file tidak valid.')
     try:
         df = pd.read_csv(io.BytesIO(store.read_file(path)))
     except Exception as e:  # noqa: BLE001
@@ -266,11 +278,38 @@ def evaluasi():
 # Prediksi satu reservasi
 # ---------------------------------------------------------------------------
 INPUT = ['hotel', 'arrival_date_month', 'lead_time', 'total_malam', 'total_tamu', 'adr',
-         'market_segment', 'deposit_type', 'total_of_special_requests', 'required_car_parking_spaces']
+         'market_segment', 'deposit_type', 'total_of_special_requests', 'required_car_parking_spaces', 'country']
 ANGKA = {'arrival_date_month', 'lead_time', 'total_malam', 'total_tamu', 'adr',
          'total_of_special_requests', 'required_car_parking_spaces'}
 BULAN = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September',
          'Oktober', 'November', 'Desember']
+# Pilihan yang sah untuk isian kategori (sama dengan pilihan di halaman Prediksi)
+PILIHAN = {
+    'hotel': ['City Hotel', 'Resort Hotel'],
+    'market_segment': ['Online TA', 'Offline TA/TO', 'Direct', 'Groups', 'Corporate', 'Complementary', 'Aviation'],
+    'deposit_type': ['No Deposit', 'Non Refund', 'Refundable'],
+}
+# Nama Indonesia untuk fitur yang tidak diisi pengguna (ditampilkan sebagai asumsi)
+ASUMSI = {'distribution_channel': 'Channel distribusi', 'agent': 'Agen', 'customer_type': 'Tipe pelanggan',
+          'meal': 'Paket makan', 'reserved_room_type': 'Tipe kamar', 'is_repeated_guest': 'Tamu berulang',
+          'punya_company': 'Pemesan perusahaan', 'previous_cancellations': 'Riwayat batal',
+          'previous_bookings_not_canceled': 'Riwayat tidak batal', 'days_in_waiting_list': 'Hari di daftar tunggu'}
+
+
+def nama_negara(kode):
+    return 'Negara lain' if kode == 'Lainnya' else NEGARA.get(kode, kode)
+
+
+def teks_asumsi(f, v):
+    if f in ('is_repeated_guest', 'punya_company'):
+        return 'ya' if v else 'tidak'
+    if f == 'agent':
+        return 'tanpa agen' if v == 'Tanpa agen' else f'agen nomor {v}'
+    return f'{v:g}' if isinstance(v, (int, float)) else str(v)
+
+
+# Batas isian angka (min, maks), mengikuti aturan pembersihan data
+BATAS = {'arrival_date_month': (1, 12), 'total_tamu': (1, None), 'adr': (0, 1000)}
 
 
 def kalimat(fitur, v):
@@ -292,6 +331,8 @@ def kalimat(fitur, v):
         return f'Segmen {v}'
     if fitur == 'deposit_type':
         return f'Deposit {v}'
+    if fitur == 'country':
+        return f'Tamu dari {nama_negara(v)}'
     return str(v)
 
 
@@ -304,7 +345,9 @@ def predict():
     paket = muat_model(kode)
     model, enc = paket['model'], paket['encoder']
 
-    baris = dict(paket['bawaan'])                      # isian lain memakai nilai paling umum
+    # Isian lain memakai nilai paling umum di data latih; channel, agen, dan tipe pelanggan
+    # memakai nilai paling umum untuk segmen pasar yang dipilih agar kombinasinya masuk akal
+    baris = dict(paket['bawaan'])
     for f in INPUT:
         if f not in body.get('data', {}):
             return gagal(f'Isian {f} belum diisi.')
@@ -313,8 +356,22 @@ def predict():
             baris[f] = float(v) if f in ANGKA else str(v)
         except (TypeError, ValueError):
             return gagal(f'Isian {f} harus berupa angka.')
+        if f in ANGKA and not np.isfinite(baris[f]):
+            return gagal(f'Isian {f} harus berupa angka.')
         if f in ANGKA and baris[f] < 0:
             return gagal(f'Isian {f} tidak boleh negatif.')
+        if f in BATAS:
+            lo, hi = BATAS[f]
+            if baris[f] < lo or (hi is not None and baris[f] > hi):
+                return gagal(f'Isian {f} harus di antara {lo} dan {hi}.' if hi is not None
+                             else f'Isian {f} minimal {lo}.')
+        if f == 'arrival_date_month' and baris[f] != int(baris[f]):
+            return gagal('Isian arrival_date_month harus bilangan bulat 1 sampai 12.')
+        if f in PILIHAN and baris[f] not in PILIHAN[f]:
+            return gagal(f'Isian {f} harus salah satu dari: ' + ', '.join(PILIHAN[f]) + '.')
+        if f == 'country' and baris[f] not in enc.top['country'] + ['Lainnya']:
+            return gagal('Isian country harus salah satu negara pada daftar atau Lainnya.')
+    baris.update(paket.get('bawaan_segmen', {}).get(baris['market_segment'], {}))
     X = enc.transform(pd.DataFrame([baris]))
     prob = float(model.predict_proba(X)[0])
 
@@ -329,8 +386,17 @@ def predict():
                    arah='menaikkan risiko' if phi[i] > 0 else 'menurunkan risiko', nilai=round(float(phi[i]), 4))
               for i in urut]
     risiko = 'rendah' if prob < 0.35 else 'sedang' if prob < 0.7 else 'tinggi'
-    return jsonify(dict(model=NAMA_MODEL[kode], probabilitas=round(prob * 100, 1), batal=prob >= 0.5,
-                        risiko=risiko, alasan=alasan))
+    asumsi = [f'{label}: {teks_asumsi(f, baris[f])}' for f, label in ASUMSI.items()]
+    return jsonify(jsonable(dict(model=NAMA_MODEL[kode], probabilitas=round(prob * 100, 1), batal=prob >= 0.5,
+                                 risiko=risiko, alasan=alasan, asumsi=asumsi)))
+
+
+@app.get('/api/opsi')
+def opsi():
+    """Pilihan isian form Prediksi yang mengikuti encoder model (negara: 15 teratas + Lainnya)."""
+    enc = muat_model('xgboost')['encoder']
+    negara = [dict(kode=k, nama=nama_negara(k)) for k in enc.top['country']] + [dict(kode='Lainnya', nama='Negara lain')]
+    return jsonify(negara=negara, segmen=PILIHAN['market_segment'], deposit=PILIHAN['deposit_type'])
 
 
 @app.get('/')

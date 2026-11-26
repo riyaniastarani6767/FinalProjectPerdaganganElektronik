@@ -39,6 +39,8 @@ Buka http://localhost:5173
 
 | Model | Accuracy | Precision | Recall | F1-score |
 |---|---|---|---|---|
-| Random Forest | 80,63% | 61,27% | 81,61% | 70,00% |
-| **XGBoost** | **82,10%** | **64,12%** | **80,21%** | **71,27%** |
+| Random Forest | 80,23% | 60,34% | 83,35% | 70,00% |
+| **XGBoost** | **81,96%** | **63,75%** | **80,76%** | **71,26%** |
+
+Kedua model memakai pre-pruning dan post-pruning (`gamma` = 5 pada XGBoost, `ccp_alpha` = 0,00005 pada Random Forest). Selisih F1 data latih dan data uji 1,52 poin (XGBoost) dan 3,21 poin (Random Forest), sehingga model good fit.
 

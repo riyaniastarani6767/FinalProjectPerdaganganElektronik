@@ -1,45 +1,84 @@
 <script setup>
-// Layout utama: header di atas, sidebar 4 menu di kiri, isi halaman di tengah
-import { onMounted } from 'vue'
+// Layout utama: sidebar gelap di kiri, bar sapaan di atas, isi halaman di kanan
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { store } from './api'
+import { NAMA_PENGGUNA, store } from './api'
+import Tooltip from './components/Tooltip.vue'
+import { logout } from './auth'
 
 const route = useRoute()
 const aktif = (to) => (to === '/' ? route.path === '/' : route.path.startsWith(to))
 const menu = [
-  { to: '/', label: 'Dashboard', icon: 'M4 15a8 8 0 0 1 16 0 M12 15l3.5-4 M3 18h18' },
-  { to: '/unggah', label: 'Unggah Data', icon: 'M12 15V4 M7.5 8.5L12 4l4.5 4.5 M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4' },
-  { to: '/prediksi', label: 'Prediksi', icon: 'M3 3v18h18 M6 16l4-5 3 3 5-7' },
-  { to: '/evaluasi', label: 'Evaluasi', icon: 'M3 21h18 M5 12h3v6H5z M10.5 8h3v10h-3z M16 4h3v14h-3z' }
+  { to: '/', label: 'Dashboard', icon: 'M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z' },
+  { to: '/unggah', label: 'Unggah Data', icon: 'M12 15V4M7.5 8.5L12 4l4.5 4.5M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4' },
+  { to: '/prediksi', label: 'Prediksi', icon: 'M3 3v18h18M7 15l4-5 3 3 5-7' }
 ]
+const tanggal = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
-onMounted(() => store.muatStatus())
+// Penanda menu aktif yang bergeser halus ke menu yang dipilih
+const navEl = ref(null)
+const penanda = ref({ opacity: 0 })
+function geserPenanda() {
+  const el = navEl.value?.querySelector('[data-aktif="true"]')
+  if (!el) return
+  penanda.value = { opacity: 1, width: el.offsetWidth + 'px', height: el.offsetHeight + 'px', transform: `translate(${el.offsetLeft}px, ${el.offsetTop}px)` }
+}
+watch(() => route.path, () => nextTick(geserPenanda))
+onMounted(() => {
+  store.muatStatus()
+  nextTick(geserPenanda)
+  window.addEventListener('resize', geserPenanda)
+})
+onBeforeUnmount(() => window.removeEventListener('resize', geserPenanda))
+
+// Keluar: hapus status masuk lalu muat ulang ke halaman login agar isian dan hasil di semua halaman ikut terhapus
+function keluar() {
+  logout()
+  window.location.href = '/login'
+}
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col">
-  <header class="flex flex-wrap items-center justify-between gap-4 px-4 md:px-8 py-3 bg-white border-b-2 border-ungu print:hidden">
-    <span class="min-h-[40px] inline-flex items-center px-3 border border-ungu rounded text-ungu text-sm">
-      Data aktif: {{ store.dataset?.nama_file || 'memuat...' }}
-    </span>
-    <RouterLink to="/" class="text-[26px] tracking-wide text-teks">Hotel<strong>Guard</strong><span class="text-ungu font-bold">.</span></RouterLink>
-    <span class="text-sm text-teks-sedang hidden sm:inline">Kelompok 3 · PEIB</span>
-  </header>
-    <div class="flex-1 flex flex-col md:flex-row">
-  <nav aria-label="Menu utama" class="md:w-[132px] shrink-0 bg-[#F7F7F9] border-b md:border-b-0 md:border-r border-garis flex md:flex-col overflow-x-auto print:hidden">
-    <RouterLink v-for="m in menu" :key="m.to" :to="m.to"
-      class="relative flex flex-col items-center justify-center gap-2 min-h-[88px] md:min-h-[120px] min-w-[96px] px-2 border-r md:border-r-0 md:border-b border-garis text-sm text-center text-teks font-medium"
-      :class="aktif(m.to) ? '!text-ungu bg-white font-semibold' : ''">
-      <span class="absolute left-0 top-0 bottom-0 w-1 rounded-r" :class="aktif(m.to) ? 'bg-ungu' : ''"></span>
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path :d="m.icon" />
-      </svg>
-      {{ m.label }}
-    </RouterLink>
-  </nav>
-      <main class="flex-1 min-w-0 bg-latar px-4 md:px-10 py-8 flex flex-col gap-5">
-        <RouterView />
+  <RouterView v-if="route.meta.publik" />
+  <div v-else class="min-h-screen flex flex-col md:flex-row gap-4 md:gap-5 p-3 md:p-4">
+    <!-- Sidebar -->
+    <aside class="md:w-[220px] shrink-0 bg-ungu-gelap text-white rounded-[18px] p-3 md:px-4 md:py-5 flex md:flex-col gap-3
+                  md:sticky md:top-4 md:h-[calc(100vh-32px)] md:overflow-y-auto items-center md:items-stretch print:hidden">
+
+      <nav ref="navEl" aria-label="Menu utama" class="relative w-full md:w-auto grid grid-cols-3 md:flex md:flex-col gap-1">
+        <span aria-hidden="true" class="absolute left-0 top-0 rounded-[10px] bg-white shadow-sm pointer-events-none transition-[transform,width,height,opacity] duration-300 ease-out" :style="penanda"></span>
+        <RouterLink v-for="m in menu" :key="m.to" :to="m.to" :data-aktif="aktif(m.to)"
+          class="relative z-10 flex items-center justify-center md:justify-start gap-1.5 md:gap-3 px-2 md:px-3.5 py-2.5 rounded-[10px] text-[12.5px] md:text-[13.5px] font-medium whitespace-nowrap transition-colors duration-300"
+          :class="aktif(m.to) ? 'text-ungu-gelap font-semibold' : 'text-white/75 hover:bg-white/10 hover:text-white'">
+          <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path :d="m.icon" /></svg>
+          {{ m.label }}
+        </RouterLink>
+      </nav>
+
+      <button type="button" class="hidden md:flex md:mt-auto shrink-0 items-center gap-3 px-3.5 py-2.5 rounded-[10px] text-[13.5px] font-medium text-white/75 hover:bg-white/10 hover:text-white transition-colors" @click="keluar">
+        <svg class="w-[18px] h-[18px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3" /></svg>
+        <span class="hidden md:inline">Keluar</span>
+      </button>
+    </aside>
+
+    <!-- Isi -->
+    <div class="flex-1 min-w-0 flex flex-col gap-4">
+      <header class="bg-white rounded-[14px] px-5 md:px-6 py-4 flex flex-wrap items-center justify-between gap-3 print:hidden">
+        <div>
+          <h1 class="text-xl font-bold">Selamat datang, {{ NAMA_PENGGUNA }}</h1>
+          <p class="text-[12.5px] text-teks-redup mt-0.5 capitalize">{{ tanggal }}</p>
+        </div>
+        <button type="button" class="md:hidden btn-garis min-h-[36px] px-3.5" @click="keluar">Keluar</button>
+      </header>
+      <main class="min-w-0">
+        <!-- halaman disimpan (KeepAlive) agar isian dan data tidak hilang saat pindah menu -->
+        <RouterView v-slot="{ Component }">
+          <Transition name="halaman" mode="out-in">
+            <KeepAlive><component :is="Component" /></KeepAlive>
+          </Transition>
+        </RouterView>
       </main>
     </div>
   </div>
+  <Tooltip />
 </template>

@@ -20,6 +20,7 @@ export const api = {
   pakaiBawaan: () => panggil('POST', '/api/dataset/bawaan'),
   preprocess: (id) => panggil('POST', '/api/preprocess', { dataset_id: id }),
   evaluasi: () => panggil('GET', '/api/evaluasi'),
+  opsi: () => panggil('GET', '/api/opsi'),
   prediksi: (model, data) => panggil('POST', '/api/predict', { model, data }),
   downloadUrl: (id) => `${API}/api/download/${id}`,
 
@@ -35,6 +36,9 @@ export const api = {
     return panggil('POST', '/api/upload/inspect', { path: awal.path, nama_file: file.name })
   }
 }
+
+// Nama yang tampil di sapaan "Selamat datang" pada bagian atas aplikasi
+export const NAMA_PENGGUNA = 'Ayu'
 
 // ===== Data bersama antarhalaman =====
 export const store = reactive({

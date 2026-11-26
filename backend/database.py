@@ -201,7 +201,10 @@ class LocalStore:
             c.execute(f'DELETE FROM {table}')
 
     def _file(self, path):
-        p = LOCAL_DIR / 'files' / path
+        dasar = (LOCAL_DIR / 'files').resolve()
+        p = (dasar / path).resolve()
+        if dasar not in p.parents:                       # tolak path di luar folder files/
+            raise ValueError('Path file tidak valid.')
         p.parent.mkdir(parents=True, exist_ok=True)
         return p
 

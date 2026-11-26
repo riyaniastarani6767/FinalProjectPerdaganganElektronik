@@ -63,9 +63,10 @@ const tampil = (v) => (v === null || v === undefined ? 'NaN' : v)
 </script>
 
 <template>
-  <div class="flex flex-col gap-1.5 pb-4 border-b border-[#E1DCF5]">
-    <h1 class="text-[32px] font-normal">Unggah Data</h1>
-    <span class="text-[13px] text-teks-redup">Unggah data reservasi, cek isinya, lalu bersihkan sebelum dipakai di Dashboard dan Prediksi</span>
+  <div class="flex flex-col gap-4">
+  <div class="px-1">
+    <h2 class="judul-halaman">Unggah Data</h2>
+    <p class="sub mt-1 leading-relaxed">Unggah data reservasi, cek isinya, lalu bersihkan sebelum dipakai di Dashboard dan Prediksi</p>
   </div>
 
   <nav aria-label="Tahapan" class="kartu grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -82,9 +83,9 @@ const tampil = (v) => (v === null || v === undefined ? 'NaN' : v)
   <section v-if="langkah === 1" class="kartu p-7 flex flex-col gap-5">
     <h2 class="text-lg font-semibold">Langkah 1 · Unggah file</h2>
     <label class="min-h-[220px] border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-2.5 p-6 text-center cursor-pointer transition-colors"
-      :class="seret ? 'border-ungu bg-ungu-muda' : 'border-[#B7A6FA] bg-[#F8F6FF]'"
+      :class="seret ? 'border-ungu bg-ungu-muda' : 'border-ungu-garis bg-ungu-pucat'"
       @dragover.prevent="seret = true" @dragleave="seret = false" @drop.prevent="seret = false; pilih($event.dataTransfer.files[0])">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#6C4CF1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" /></svg>
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#4E3A86" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-3" /></svg>
       <strong class="text-base">{{ sibuk || 'Tarik file CSV ke sini atau klik untuk memilih file' }}</strong>
       <span class="text-[13px] text-teks-redup">Bisa data mentah (format Hotel Booking, 32 kolom) atau data yang sudah dipreprocessing</span>
       <input ref="inputFile" type="file" accept=".csv" class="sr-only" :disabled="!!sibuk" @change="pilih($event.target.files[0])" />
@@ -137,7 +138,7 @@ const tampil = (v) => (v === null || v === undefined ? 'NaN' : v)
     </ol>
     <div v-if="proses" class="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3">
       <div class="bg-ungu-pucat rounded-md p-3.5 flex flex-col"><span class="text-xs text-teks-sedang">Sebelum</span><strong class="text-xl">{{ ribuan(proses.info.baris_awal) }} × {{ proses.info.kolom_awal }}</strong></div>
-      <div class="bg-ungu text-white rounded-md p-3.5 flex flex-col"><span class="text-xs text-ungu-terang">Sesudah (siap model)</span><strong class="text-xl">{{ ribuan(proses.info.baris_bersih) }} × {{ proses.info.kolom_model }}</strong></div>
+      <div class="bg-ungu-muda rounded-md p-3.5 flex flex-col"><span class="text-xs text-ungu">Sesudah (siap model)</span><strong class="text-xl">{{ ribuan(proses.info.baris_bersih) }} × {{ proses.info.kolom_model }}</strong></div>
       <div class="bg-pink-muda rounded-md p-3.5 flex flex-col"><span class="text-xs text-pink-tua">Proporsi batal</span><strong class="text-xl">{{ persen(proses.info.persen_batal, 1) }}</strong></div>
     </div>
     <div class="flex justify-between gap-2.5 flex-wrap">
@@ -148,13 +149,13 @@ const tampil = (v) => (v === null || v === undefined ? 'NaN' : v)
 
   <!-- Langkah 4 -->
   <section v-if="langkah === 4 && dataset" class="kartu p-7 flex flex-col gap-5">
-    <div class="bg-ungu text-white rounded-lg p-6 flex gap-4 items-center">
-      <span class="w-[52px] h-[52px] shrink-0 rounded-full bg-white text-ungu flex items-center justify-center">
+    <div class="bg-ungu-muda text-ungu-gelap rounded-xl p-6 flex gap-4 items-center">
+      <span class="w-[52px] h-[52px] shrink-0 rounded-full bg-ungu text-white flex items-center justify-center">
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7" /></svg>
       </span>
       <div class="flex flex-col gap-1">
         <strong class="text-xl">Data ini sudah bersih</strong>
-        <span class="text-sm text-ungu-terang">{{ jenis === 'bersih'
+        <span class="text-sm text-teks-sedang">{{ jenis === 'bersih'
           ? 'File ini terdeteksi sudah dipreprocessing, jadi langkah preview dan preprocessing dilewati. Selanjutnya data siap masuk ke analisis.'
           : 'Preprocessing selesai. Selanjutnya data siap masuk ke analisis di Dashboard dan Prediksi.' }}</span>
       </div>
@@ -172,4 +173,5 @@ const tampil = (v) => (v === null || v === undefined ? 'NaN' : v)
       <button class="btn text-teks-sedang underline font-medium" @click="ulang">Unggah file lain</button>
     </div>
   </section>
+  </div>
 </template>

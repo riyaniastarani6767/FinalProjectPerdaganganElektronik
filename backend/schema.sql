@@ -16,6 +16,10 @@ create table if not exists dataset (
     dibuat_pada timestamptz default now()
 );
 
+-- Row Level Security aktif tanpa policy: tabel tidak bisa diakses dengan anon key.
+-- Backend tetap bisa membaca dan menulis karena memakai service_role key.
+alter table dataset enable row level security;
+
 
 -- Bucket penyimpanan file CSV (privat, diakses lewat backend dengan service key)
 insert into storage.buckets (id, name, public)

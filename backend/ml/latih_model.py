@@ -7,7 +7,8 @@ Jalankan dari folder backend:
 Hasil:
     models/model_xgboost.pkl         model XGBoost manual + encoder
     models/model_random_forest.pkl   model Random Forest manual + encoder
-    models/evaluasi.json             metrik, confusion matrix, SHAP global, baseline (untuk menu Evaluasi)
+    models/evaluasi.json             metrik latih dan uji, confusion matrix, SHAP global, baseline,
+                                     dan perbandingan pembagian data (untuk menu Evaluasi)
 """
 import json
 import pickle
@@ -29,13 +30,39 @@ from ml.preprocessing import FITUR, LABEL, Encoder, clean_raw              # noq
 
 MODELS = BASE / 'models'
 SEED = 42
+N_LATAR = 1000          # jumlah baris latar (background) SHAP, sama dengan notebook
+FITUR_SEGMEN = ['distribution_channel', 'agent', 'customer_type']   # diisi sesuai segmen pasar saat prediksi
 
-# Parameter terbaik hasil tuning manual di notebook
+# Parameter terbaik hasil tuning manual di notebook (dipilih dengan data validasi)
+# Pre-pruning : max_depth, min_child_weight (XGBoost); max_depth, min_samples_split, min_samples_leaf (RF)
+# Post-pruning: gamma (XGBoost) dan ccp_alpha (RF)
 PARAM_XGB = dict(n_estimators=200, learning_rate=0.1, max_depth=8, min_child_weight=3,
-                 reg_lambda=1.0, gamma=0.0, subsample=0.8, colsample_bytree=0.6,
+                 reg_lambda=1.0, gamma=5.0, subsample=0.8, colsample_bytree=0.6,
                  scale_pos_weight=2.0)
 PARAM_RF = dict(n_estimators=50, max_depth=25, min_samples_split=5, min_samples_leaf=1,
-                max_features='sqrt', max_samples=0.6, class_weight='balanced', ccp_alpha=0.0)
+                max_features='sqrt', max_samples=0.6, class_weight='balanced', ccp_alpha=5e-5)
+
+MODEL = [('xgboost', 'XGBoost', XGBoostManual, PARAM_XGB),
+         ('random_forest', 'Random Forest', RandomForestManual, PARAM_RF)]
+
+
+def bulat(m):
+    return {k: (round(v, 2) if isinstance(v, float) else v) for k, v in m.items()}
+
+
+def perbandingan_split(data, y):
+    """Melatih ulang kedua model pada 4 pembagian data (sama dengan notebook bagian 3.6)."""
+    hasil = []
+    for nama_split, ts in [('90:10', 0.1), ('80:20', 0.2), ('70:30', 0.3), ('60:40', 0.4)]:
+        il, iu = stratified_split(y, test_size=ts, seed=SEED)
+        e = Encoder().fit(data.iloc[il])
+        Xl, Xu = e.transform(data.iloc[il]), e.transform(data.iloc[iu])
+        for _, nama, kelas, param in MODEL:
+            m = hitung_metrik(y[iu], kelas(**param, seed=SEED).fit(Xl, y[il]).predict_proba(Xu) >= 0.5)
+            hasil.append(dict(split=nama_split, model=nama, data_uji=int(len(iu)),
+                              **{k: round(m[k], 2) for k in ['accuracy', 'precision', 'recall', 'f1']}))
+            print(f'  split {nama_split} {nama}: F1 {m["f1"]:.2f}%')
+    return hasil
 
 
 def main():
@@ -54,27 +81,35 @@ def main():
         v = latih[f].mode()[0]
         bawaan[f] = v.item() if hasattr(v, 'item') else v
 
+    # nilai bawaan per segmen pasar, agar kombinasi isian masuk akal
+    # (contoh: segmen Direct -> tanpa agen dan channel Direct, bukan agen travel)
+    bawaan_segmen = {}
+    for seg, g in latih.groupby('market_segment'):
+        bawaan_segmen[seg] = {f: g[f].mode()[0] for f in FITUR_SEGMEN}
+
     rng = np.random.default_rng(0)
-    latar = X_latih[rng.choice(len(X_latih), 1000, replace=False)]
+    latar = X_latih[rng.choice(len(X_latih), N_LATAR, replace=False)]
     hasil = dict(data=dict(nama='Hotel Booking Demand', jumlah=info['baris_bersih'],
                            latih=int(len(idx_latih)), uji=int(len(idx_uji)), persen_batal=info['persen_batal']),
                  model={})
 
-    for kode, nama, kelas, param in [('xgboost', 'XGBoost', XGBoostManual, PARAM_XGB),
-                                     ('random_forest', 'Random Forest', RandomForestManual, PARAM_RF)]:
+    for kode, nama, kelas, param in MODEL:
         t = time.time()
         model = kelas(**param, seed=SEED).fit(X_latih, y_latih)
         durasi = time.time() - t
         m = hitung_metrik(y_uji, model.predict_proba(X_uji) >= 0.5)
+        m_latih = hitung_metrik(y_latih, model.predict_proba(X_latih) >= 0.5)
         phi = shap_permutasi(model.output, X_uji[:200], latar, enc.groups, n_perm=10)
         besar = np.abs(phi).mean(axis=0)
         shap = sorted([dict(fitur=g[0], persen=round(float(v / besar.sum() * 100), 2))
                        for g, v in zip(enc.groups, besar)], key=lambda x: -x['persen'])
-        hasil['model'][kode] = dict(nama=nama, **{k: (round(v, 2) if isinstance(v, float) else v) for k, v in m.items()},
-                                    shap=shap[:10], parameter=param, durasi_latih=round(durasi, 1))
+        hasil['model'][kode] = dict(nama=nama, **bulat(m),
+                                    latih={k: round(m_latih[k], 2) for k in ['accuracy', 'precision', 'recall', 'f1']},
+                                    shap=shap, parameter=param, durasi_latih=round(durasi, 1))
         with open(MODELS / f'model_{kode}.pkl', 'wb') as f:
-            pickle.dump(dict(model=model, encoder=enc, latar=latar, bawaan=bawaan), f)
-        print(f'{nama}: F1 {m["f1"]:.2f}%, disimpan ke models/model_{kode}.pkl ({durasi:.1f} detik)')
+            pickle.dump(dict(model=model, encoder=enc, latar=latar, bawaan=bawaan, bawaan_segmen=bawaan_segmen), f)
+        print(f'{nama}: F1 uji {m["f1"]:.2f}%, F1 latih {m_latih["f1"]:.2f}%, '
+              f'disimpan ke models/model_{kode}.pkl ({durasi:.1f} detik)')
 
     # baseline sederhana sebagai pembanding (model yang baik harus mengalahkan ini)
     def ringkas(nama, m):
@@ -90,6 +125,9 @@ def main():
         ringkas('Pohon keputusan kedalaman 3', hitung_metrik(y_uji, pohon.predict_proba_binned(b.transform(X_uji)) >= 0.5)),
     ]
     hasil['terbaik'] = max(hasil['model'], key=lambda k: hasil['model'][k]['f1'])
+
+    print('Perbandingan pembagian data:')
+    hasil['split'] = perbandingan_split(data, y)
 
     (MODELS / 'evaluasi.json').write_text(json.dumps(hasil, indent=2, default=float))
     print('Model terbaik:', hasil['model'][hasil['terbaik']]['nama'])

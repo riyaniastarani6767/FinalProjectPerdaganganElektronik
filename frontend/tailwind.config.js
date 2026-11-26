@@ -4,13 +4,14 @@ export default {
   theme: {
     extend: {
       colors: {
-        ungu: { DEFAULT: '#6C4CF1', tua: '#5236D6', muda: '#EEEAFE', pucat: '#F4F1FE', garis: '#D9D2FB', terang: '#E7E1FF' },
-        pink: { DEFAULT: '#E85D9A', tua: '#A3174F', gelap: '#7A1240', muda: '#FDE8F1' },
-        latar: '#F4F2FB',
-        teks: { DEFAULT: '#1F1D2B', sedang: '#4A4759', redup: '#6B6880' },
-        garis: '#ECEBF2'
+        // Palet plum dan dusty rose (tanpa hijau)
+        ungu: { DEFAULT: '#4E3A86', tua: '#3E2D6E', gelap: '#33265C', muda: '#ECE8F3', pucat: '#F6F4F9', garis: '#D8D1E6', terang: '#D9D2EA' },
+        pink: { DEFAULT: '#C4547B', tua: '#9E3A60', gelap: '#7A1F45', muda: '#F5E4EA', lembut: '#E7A9C0' },
+        latar: '#EEECF2',
+        teks: { DEFAULT: '#1E1B24', sedang: '#4A4752', redup: '#6B6873' },
+        garis: '#E5E2E8'
       },
-      fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+      fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'] }
     }
   },
   plugins: []
