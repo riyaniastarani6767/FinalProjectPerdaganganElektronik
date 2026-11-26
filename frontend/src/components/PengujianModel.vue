@@ -1,7 +1,9 @@
 <script setup>
-// Bagian "Pengujian model" di halaman Prediksi: kartu XGBoost dan Random Forest, perbandingan metrik, dan SHAP global
+// Bagian "Pengujian model" di halaman Prediksi: kartu XGBoost dan Random Forest, perbandingan metrik, SHAP global,
+// confusion matrix, dan tabel perbandingan dengan baseline
 import { computed } from 'vue'
 import { desimal, LABEL_FITUR, ribuan } from '../api'
+import ConfusionMatrix from './ConfusionMatrix.vue'
 
 const props = defineProps({
   ev: { type: Object, required: true },
@@ -19,6 +21,9 @@ const WARNA = { xgboost: '#5C47A3', random_forest: '#C25680' }
 const xgb = computed(() => props.ev.model.xgboost)
 const rf = computed(() => props.ev.model.random_forest)
 const baselineTerbaik = computed(() => props.ev.baseline.reduce((a, b) => (b.f1 > a.f1 ? b : a)))
+// model yang ditampilkan di confusion matrix dan tabel baseline
+const modelTampil = computed(() => (dua.value ? ['xgboost', 'random_forest'] : [props.pilih]).map((k) => props.ev.model[k]))
+const modelTabel = computed(() => ['random_forest', 'xgboost'].map((k) => ({ ...props.ev.model[k], terbaik: k === props.ev.terbaik })))
 
 const kartu = computed(() => (dua.value ? ['xgboost', 'random_forest'] : [props.pilih]).map((kode) => {
   const m = props.ev.model[kode]
@@ -137,6 +142,49 @@ const kalimatShap = computed(() => {
         </div>
       </div>
       <p class="sub mt-2 leading-relaxed">{{ kalimatShap }}</p>
+    </div>
+  </section>
+
+  <section class="grid grid-cols-1 gap-4" :class="dua ? 'xl:grid-cols-2' : 'xl:grid-cols-[1fr_1.2fr]'">
+    <div v-for="m in modelTampil" :key="m.nama" class="kartu flex flex-col gap-3 min-w-0">
+      <div>
+        <h3 class="judul-kartu">Confusion matrix {{ m.nama }}</h3>
+        <span class="sub">Jumlah tebakan benar dan salah pada {{ ribuan(ev.data.uji) }} data uji</span>
+      </div>
+      <ConfusionMatrix :tn="m.tn" :fp="m.fp" :fn="m.fn" :tp="m.tp" />
+      <p class="sub leading-relaxed">
+        Dari {{ ribuan(m.tp + m.fn) }} reservasi yang benar-benar batal, {{ ribuan(m.tp) }} tertangkap model (recall {{ desimal(m.recall) }}%).
+        Dari {{ ribuan(m.tp + m.fp) }} reservasi yang ditebak batal, {{ ribuan(m.tp) }} benar batal (precision {{ desimal(m.precision) }}%).
+      </p>
+    </div>
+
+    <div class="kartu flex flex-col gap-3 min-w-0" :class="dua ? 'xl:col-span-2' : ''">
+      <div>
+        <h3 class="judul-kartu">Perbandingan dengan model pembanding (baseline)</h3>
+        <span class="sub">Diuji pada {{ ribuan(ev.data.uji) }} data uji yang sama. Model yang baik harus mengalahkan pembanding sederhana.</span>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[520px] text-[13px] tabular-nums">
+          <thead><tr class="text-left text-xs text-teks-redup">
+            <th class="px-2 py-2.5 font-medium border-b border-garis">Model</th>
+            <th v-for="[k, label] in METRIK" :key="k" class="px-2 py-2.5 font-medium border-b border-garis text-right">{{ label }}</th>
+          </tr></thead>
+          <tbody>
+            <tr v-for="b in ev.baseline" :key="b.nama" class="text-teks-redup">
+              <td class="px-2 py-2.5 border-b border-garis">{{ b.nama }}</td>
+              <td v-for="[k] in METRIK" :key="k" class="px-2 py-2.5 border-b border-garis text-right">{{ k === 'precision' && b.recall === 0 ? 'Tidak ada' : desimal(b[k]) + '%' }}</td>
+            </tr>
+            <tr v-for="m in modelTabel" :key="m.nama" :class="m.terbaik ? 'bg-ungu-pucat font-semibold' : ''">
+              <td class="px-2 py-2.5 border-b border-garis">{{ m.nama }}{{ m.terbaik ? ' (terbaik)' : '' }}</td>
+              <td v-for="[k] in METRIK" :key="k" class="px-2 py-2.5 border-b border-garis text-right">{{ desimal(m[k]) }}%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="sub leading-relaxed">
+        Baseline "selalu menebak tidak batal" sudah mendapat accuracy {{ desimal(ev.baseline[0].accuracy) }}% tanpa menangkap satu pun pembatalan.
+        Karena itu model dibandingkan dengan F1-score, bukan accuracy saja.
+      </p>
     </div>
   </section>
 </template>

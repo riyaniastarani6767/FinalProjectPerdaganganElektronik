@@ -64,7 +64,13 @@ function kalimat(h) {
   const kecil = (t) => t.charAt(0).toLowerCase() + t.slice(1)
   const naik = h.alasan.filter((a) => a.nilai > 0).map((a) => kecil(a.teks))
   const turun = h.alasan.filter((a) => a.nilai <= 0).map((a) => kecil(a.teks))
-  return { arah: h.batal ? 'cenderung batal' : 'cenderung tidak batal', naik: gabung(naik), turun: gabung(turun) }
+  // alasan utama mengikuti arah hasil: BATAL karena faktor yang menaikkan, TIDAK BATAL karena faktor yang menurunkan
+  return {
+    arah: h.batal ? 'cenderung batal' : 'cenderung tidak batal',
+    utama: gabung(h.batal ? naik : turun),
+    lain: gabung(h.batal ? turun : naik),
+    arahLain: h.batal ? 'menurunkan' : 'menaikkan'
+  }
 }
 const lebarShap = (h, a) => (Math.abs(a.nilai) / Math.max(...h.alasan.map((x) => Math.abs(x.nilai)))) * 55
 const satuanShap = (h) => (h.model === 'XGBoost' ? 'log-odds' : 'peluang')
@@ -162,8 +168,8 @@ const grup = 'flex flex-col gap-3 py-4 border-t border-garis first:border-t-0 fi
         </div>
         <p class="sub text-center mt-1">Diputuskan batal jika peluang 50% atau lebih</p>
         <div class="bg-ungu-pucat rounded-xl px-3.5 py-3 text-[13px] leading-relaxed text-teks-sedang mt-4">
-          Reservasi ini <b class="text-teks">{{ kalimat(satu).arah }}</b><template v-if="kalimat(satu).naik">, terutama karena {{ kalimat(satu).naik }}</template>.
-          <template v-if="kalimat(satu).turun"> Faktor yang menurunkan risiko: {{ kalimat(satu).turun }}.</template>
+          Reservasi ini <b class="text-teks">{{ kalimat(satu).arah }}</b><template v-if="kalimat(satu).utama">, terutama karena {{ kalimat(satu).utama }}</template>.
+          <template v-if="kalimat(satu).lain"> Faktor yang {{ kalimat(satu).arahLain }} risiko: {{ kalimat(satu).lain }}.</template>
         </div>
         <div class="flex flex-wrap justify-between items-baseline gap-2 mt-5 mb-1.5">
           <h3 class="judul-kartu">Alasan utama (SHAP)</h3>
